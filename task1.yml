@@ -1,0 +1,27 @@
+---
+- hosts: server
+  tasks:
+   - shell: add=10000; number="$(cat /proc/sys/fs/file-max)"; new_value=$(($number + $add)); echo $new_value
+     register: system
+   - shell: add=10000; number="$(ulimit -Sn)"; new_value=$(($number + $add)); echo $new_value
+     register: soft_limit
+   - shell: add=10000; number="$(ulimit -Hn)"; new_value=$(($number + $add)); echo $new_value
+     register: hard_limit
+   - pam_limits:
+          domain: nemanja
+          limit_type: soft
+          limit_item: nofile
+          value: "{{ soft_limit.stdout }}"
+
+   - pam_limits:
+          domain: nemanja
+          limit_type: hard
+          limit_item: nofile
+          value: "{{ hard_limit.stdout }}"
+
+   - sysctl:
+          name: fs.file-max
+          value: "{{ system.stdout }}"
+          state: present
+          reload: yes
+
