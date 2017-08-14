@@ -1,0 +1,40 @@
+---
+- hosts: server
+  tasks:
+    - name: Add Passenger apt key.
+      apt_key:
+        keyserver: keyserver.ubuntu.com
+        id: 561F9B9CAC40B2F7
+        state: present
+    - name: HTTPS ca-certificates
+      apt: pkg={{item}}
+      with_items:
+        - apt-transport-https
+        - ca-certificates
+    - name: Add Phusion apt repo.
+      apt_repository:
+        repo: 'deb https://oss-binaries.phusionpassenger.com/apt/passenger {{ansible_distribution_release}} main'
+        state: present
+        update_cache: yes
+    - name: update_cache
+      apt:
+        update_cache: yes
+# Nginx and passenger installation.
+    - name: Install Nginx and Passenger.
+      apt: "pkg={{ item }} state=installed"
+      with_items:
+        - nginx-extras
+        - passenger
+    - name: Configure passenger
+      copy:
+        src: /passenger.conf
+        dest: /etc/nginx/passenger.conf
+        owner: root
+        group: root
+        notify: restart nginx
+handlers:
+    - name: restart nginx
+        become: true
+        service:
+          name: nginx
+          state: restarted

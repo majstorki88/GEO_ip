@@ -1,0 +1,26 @@
+---
+- hosts: server
+  gather_facts: no
+  vars:
+    user: ror_app
+    password: testpass
+  tasks:
+    - name: Add Phusion apt repo.
+      apt_repository:
+        repo: 'deb http://apt.postgresql.org/pub/repos/apt/ main'
+        state: present
+        update_cache: yes
+    - name: ensure packages are installed
+      apt: name={{item}}
+      with_items:
+        - postgresql
+        - libpq-dev
+        - python-psycopg2
+        - postgresql-contrib
+    - service:
+        name: postgresql
+        state: started
+    - name: ensure user has Read, Write, Create rights
+      postgresql_user: name={{dbuser}} password={{dbpassword}} priv=READ,WRITE,CREATEDB
+    - name: ensure user does not have unnecessary privilege
+      postgresql_user: name={{dbuser}} role_attr_flags=NOSUPERUSER

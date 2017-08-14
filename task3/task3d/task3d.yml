@@ -1,0 +1,90 @@
+
+---
+- name: inicialize app
+  hosts: server
+  become: yes
+  become_method: sudo
+  gather_facts: no
+  tasks:
+    - name: Perform Safe Upgrade
+      apt: upgrade=safe update_cache=yes
+    - name: set hostname
+      hostname: name= mojserver.mojdomen
+    - name: Create swap file
+      command: dd if=/dev/zero of= /swapfile bs=1024 count=1024k creates=/swapfile
+      when: swap_enabled is defined and swap_enabled == true
+    - name: Change swap file permissions
+      file: path=/swapfile owner=root group=root mode=0600
+      when: swap_enabled is defined and swap_enabled == true
+    - name: Check swap file type
+      command: file /swapfile
+      register: swapfile
+      when: swap_enabled is defined and swap_enabled == true
+    - name: Make swap file
+      command: mkswap /swapfile
+      when: swapfile.stdout.find('swap file') == -1 & swap_enabled is defined and swap_enabled == true
+    - name: Write swap entry in fstab
+      mount: name=none src=/swapfile fstype=swap opts=sw passno=0 dump=0 state=present
+      when: swap_enabled is defined and swap_enabled == true
+    - name: Mount swap
+      command: swapon /swapfile
+      when: ansible_swaptotal_mb < 1
+      when: swap_enabled is defined and swap_enabled == true
+    - name: Set swapiness in /proc/sys/vm/swappiness
+      shell: echo 10 | tee /proc/sys/vm/swappiness
+      when: swap_enabled is defined and swap_enabled == true
+    - name: Set swapiness in /etc/sysctl.conf
+      shell: echo vm.swappiness = 10 | tee -a /etc/sysctl.conf
+      when: swap_enabled is defined and swap_enabled == true
+    - name: Install Tools
+      apt: name={{ item }} state=latest update_cache=true
+      with_items:
+        - build-essential
+        - tmux
+        - vim
+        - htop
+        - git-core
+        - wget
+        - zlib1g-dev
+        - libssl-dev
+        - libreadline-dev
+        - libyaml-dev
+        - libxml2-dev
+        - libxslt1-dev
+        - libffi-dev
+        - curl
+        - libcurl3
+        - libcurl3-gnutls
+        - libcurl4-openssl-dev
+        - nodejs
+    - name: Create deploy dir
+      file: path=/var/www/test_app state=directory owner=deploy group=deploy
+    - name: Create releases dir
+      file: path=/var/www/test_app/releases state=directory owner=deploy group=deploy
+    - name: Create repo dir
+      file: path=/var/www/test_app/repo state=directory owner=deploy group=deploy
+    - name: Create shared dir
+      file: path=/var/www/test_app/shared state=directory owner=deploy group=deploy
+    - name: Create shared/config dir
+      file: path=/var/www/test_app/shared/config state=directory owner=deploy group=deploy
+    - name: Create shared/log dir
+      file: path=/var/www/test_app/shared/log state=directory owner=deploy group=deploy
+    - name: Create shared/public dir
+      file: path=/var/www/test_app/shared/public state=directory owner=deploy group=deploy
+    - name: Create shared/tmp dir
+      file: path=/var/www/test_app/shared/tmp state=directory owner=deploy group=deploy
+    - name: Copy secrets.yml
+      template: src=secrets.yml dest=/var/www/test_app/shared/config/secrets.yml owner=deploy group=deploy
+    - name: Copy database.yml
+      template: src=database.yml dest=/var/www/test_app/shared/config/database.yml owner=deploy group=deploy
+    - name: Copy puma.rb
+      template: src=puma.rb dest=/var/www/test_app/shared/puma.rb owner=deploy group=deploy
+    - name: Restart Nginx
+      service: name=nginx state=restarted enabled=yes
+    - name: Ensure Nginx is running
+      service: name=nginx state=started enabled=yes
+    - name: Install Memcached
+      apt: name=memcached state=latest
+    - name: Ensure Memcached is running
+      service: name=memcached state=started enabled=yes
+...
