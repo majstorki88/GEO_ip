@@ -5,22 +5,56 @@
     user: ror_app
     password: testpass
   tasks:
-    - name: Add Phusion apt repo.
+
+    - name: Adding APT repository key
+      become: yes
+      apt_key:
+        id: ACCC4CF8
+        url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+      tags:
+        - postgresql
+        - db
+        - repo
+
+    - name: Add PostgreSQL official APT repository
+      become: yes
       apt_repository:
-        repo: 'deb http://apt.postgresql.org/pub/repos/apt/ main'
+        repo: "deb http://apt.postgresql.org/pub/repos/apt/ {{ansible_distribution_release}}-pgdg main"
+      tags:
+        - postgresql
+        - db
+        - repo
+
+    - name: Install PostgreSQL
+      become: yes
+      apt:
+        name: "postgresql-{{postgresql_version}}"
         state: present
         update_cache: yes
-    - name: ensure packages are installed
-      apt: name={{item}}
-      with_items:
+        cache_valid_time: 3600
+      tags:
         - postgresql
-        - libpq-dev
-        - python-psycopg2
-        - postgresql-contrib
+        - db
+        - deps
+
+    - name: Install dependencies for the Ansible module
+      become: yes
+      apt:
+        name: "{{item}}"
+        state: latest
+      with_items:
+          - python-psycopg2
+      tags:
+        - postgresql
+        - db
+        - deps
+
     - service:
         name: postgresql
         state: started
+
     - name: ensure user has Read, Write, Create rights
-      postgresql_user: name={{dbuser}} password={{dbpassword}} priv=READ,WRITE,CREATEDB
+      postgresql_user: name={{user}} password={{password}} priv=READ,WRITE,CREATEDB
+
     - name: ensure user does not have unnecessary privilege
-      postgresql_user: name={{dbuser}} role_attr_flags=NOSUPERUSER
+      postgresql_user: name={{user}} role_attr_flags=NOSUPERUSER
