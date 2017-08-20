@@ -8,13 +8,24 @@ vars:
       apt: update_cache=yes
       sudo: yes
     - name: Install base packages
-      apt: pkg=$item state=latest
+      apt: pkg={{item}}
       sudo: yes
       with_items:
-        - nodejs
+        - git-core
         - curl
-        - python-psycopg2
-        - libpq-dev
+        - zlib1g-dev
+        - build-essential
+        - libssl-dev
+        - libreadline-dev
+        - libyaml-dev
+        - libsqlite3-dev
+        - sqlite3
+        - libxml2-dev
+        - libxslt1-dev
+        - libcurl4-openssl-dev
+        - python-software-properties
+        - libffi-dev
+        - nodejs
     - name: install rvm
       shell: \curl -L https://get.rvm.io | bash -s stable --autolibs=3 creates=~/.rvm
     - name: install ruby
