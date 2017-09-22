@@ -1,6 +1,25 @@
-# gittask
-Master branch was empty. In the task it was asked to make PR for every feature branch and merge to master branch...
-we believe that in task 1. result won't be visible without additional configs or restart of the system
-task 3a - we are getting "ERROR! Syntax Error while loading YAML". There is an issue with YAML indentation. Additionally ansible playbook is trying to access passenger.conf file which is not in this folder but in 3b?!
-task 3b - there is an issue with Xenial repo and key, they are not specified so installation does not go through for us. Additionally the naming of variables is messed up, you defined vars user, password and you try to use dbuser and dbpassword below
-task 3c - we again had syntax error: apt: pkg=$item state=latest should be apt: pkg=$item state=latest (we used ansible 2.3.2.0, maybe you had another version...)
+# 1. Podesavanje hard/soft limit-a pri dobijanju greske TOO MANY FILES OPEN
+
+Pokrenuti ansible playbook task1.yml
+
+U host fajlu ansibla za servers podesiti hostname/IP adrese servera koji će biti afektovani, i dodeliti u host fajlu sudo prava ka tim serverima
+
+
+# 2. Kreiranje baze i aplikacije
+
+Python skripta task2.py kreira bazu geo_test u koliko ne postoji, curl-uje sa adrese http://api.hostip.info/get_json.php
+geo lokaciju i istu storuje u navedenu bazu.
+
+# 3. Kreiranje okruženja
+
+U folderu Task3 nalazi se ansible playbook-ovi koji:
+
+- Task3a - Instalira se NGNIX sa Passenger modom playbook-om task3a.yml
+
+- Task3b - Instalira se PostgreSQL sa userom ror_app/testpass koji ima privilegije Read, Write, Create playbook-om task3b.yml
+
+- Task3c - Instalira se ruby-2.4.2 system wide sa playbook-om task3c.yml
+
+- Task3d - Inicijalizuje se aplikacija test_app kojom se NGINX povezuje sa PostgreSQL playbook-om task3d.yml
+
+- Task3d - Završno podešavanje NGINX-a kako bi bio vidljiv na javnoj IP adresi playbook-om task3d.yml
