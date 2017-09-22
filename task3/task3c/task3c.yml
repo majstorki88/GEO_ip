@@ -1,0 +1,39 @@
+---
+- name: system wide RoR
+  hosts: server
+vars:
+    ruby: ruby-2.4.2
+  tasks:
+    - name: Update apt
+      apt: update_cache=yes
+      sudo: yes
+    - name: Install base packages
+      apt: pkg={{item}}
+      sudo: yes
+      with_items:
+        - git-core
+        - curl
+        - zlib1g-dev
+        - build-essential
+        - libssl-dev
+        - libreadline-dev
+        - libyaml-dev
+        - libsqlite3-dev
+        - sqlite3
+        - libxml2-dev
+        - libxslt1-dev
+        - libcurl4-openssl-dev
+        - python-software-properties
+        - libffi-dev
+        - nodejs
+    - name: install rvm
+      shell: \curl -L https://get.rvm.io | bash -s stable --autolibs=3 creates=~/.rvm
+    - name: install ruby
+      shell: ~/.rvm/bin/rvm install --default {{ ruby }} creates=~/.rvm/rubies/{{ ruby }}
+    - name: copy up .bashrc
+      copy: dest=~/.bashrc
+            src=files/bashrc
+    - name: copy up .bash_profile
+      copy: dest=~/.bash_profile
+            src=files/bash_profile
+...
